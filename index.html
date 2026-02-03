@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SongPractice Studio | UX Mejorado</title>
+    <title>SongPractice Studio | Pro Library</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    
     <style>
         :root {
-            --primary: #f59e0b; /* Amber/Dorado para resaltar */
+            --primary: #f59e0b;
             --bg: #0f172a;
             --panel-bg: #1e293b;
             --text: #f1f5f9;
@@ -38,30 +40,25 @@
         .sidebar.open { transform: translateX(0); }
         
         .playlists-section {
-            background: #0f172a;
-            padding: 15px;
-            border-bottom: 2px solid #334155;
-            flex-shrink: 0; 
+            background: #0f172a; padding: 15px; border-bottom: 2px solid #334155; flex-shrink: 0; 
         }
         .playlist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .playlist-list {
-            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px;
-            scrollbar-width: thin;
-        }
+        .playlist-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin; }
         .playlist-chip {
             background: #334155; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; white-space: nowrap; cursor: pointer; border: 1px solid transparent; flex-shrink: 0; color: #cbd5e1; transition: all 0.2s;
         }
         .playlist-chip.active { background: var(--primary); color: #0f172a; font-weight: bold; border-color: var(--primary); box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
-        .playlist-chip:hover:not(.active) { background: #475569; }
-
+        
         .songs-section { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
         .sidebar-title { color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: bold; padding-left: 5px; border-left: 3px solid var(--accent); }
 
         .song-item {
-            background: #1f2937; padding: 12px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;
+            background: #1f2937; padding: 12px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; user-select: none;
         }
         .song-item:hover { background: #374151; }
         .song-item.active { border-color: var(--primary); background: rgba(245, 158, 11, 0.15); } 
+        .sortable-ghost { opacity: 0.4; background: #475569; border: 1px dashed var(--primary); }
+        .drag-handle { cursor: grab; color: #64748b; margin-right: 10px; font-size: 1.2rem; }
         
         .song-type { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; margin-right: 5px; text-transform: uppercase; font-weight: bold; }
         .type-yt { background: #dc2626; color: white; }
@@ -87,7 +84,7 @@
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         
         label { display: block; margin-bottom: 8px; color: #94a3b8; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-        input, textarea { width: 100%; background: #020617; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        input, textarea, select { width: 100%; background: #020617; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         textarea { height: 200px; font-family: var(--font-mono); }
 
         .file-upload { position: relative; display: inline-block; width: 100%; }
@@ -98,13 +95,9 @@
         button { background: #334155; color: white; border: 1px solid #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         button:hover { background: #475569; }
         button.primary { background: var(--primary); border-color: var(--primary); color: #0f172a; }
-        /* Nuevo botón verde para agregar */
         button.btn-new { background: var(--success); border-color: var(--success); color: #0f172a; }
         button.btn-new:hover { background: #059669; }
-
         button.save-btn { background: #059669; border-color: #059669; width: 100%; justify-content: center; margin-top: 15px; color: white; }
-        
-        /* BOTONES DE ICONO (Lápiz y Tacho) */
         .icon-btn { padding: 6px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #94a3b8; cursor: pointer; font-size: 0.9rem; margin-left: 5px; }
         .icon-btn:hover { background: #334155; color: white; }
         .icon-btn.danger:hover { background: #7f1d1d; border-color: #ef4444; color: white; }
@@ -114,7 +107,7 @@
 
         #mediaContainer { position: fixed; bottom: 110px; right: 20px; width: 320px; height: 180px; z-index: 999; display: none; background: black; border-radius: 12px; overflow: hidden; border: 2px solid #334155; box-shadow: 0 20px 25px rgba(0,0,0,0.6); }
         #audioVisualizer { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(to bottom, #1e1b4b, #000); color: white; }
-        .drag-handle { position: absolute; top: 0; left: 0; right: 0; height: 30px; background: rgba(255,255,255,0.1); cursor: move; z-index: 1000; }
+        .drag-handle-window { position: absolute; top: 0; left: 0; right: 0; height: 30px; background: rgba(255,255,255,0.1); cursor: move; z-index: 1000; }
 
         .player-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15, 23, 42, 0.98); border-top: 1px solid #334155; padding: 10px 30px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; height: 80px; }
         .controls-center { display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%); }
@@ -123,6 +116,14 @@
         .badge { background: #334155; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; color: #cbd5e1; }
         .badge.active { background: #10b981; color: white; }
         .db-status { position: fixed; bottom: 90px; left: 20px; font-size: 0.7rem; color: #64748b; z-index: 900; }
+
+        /* MODAL BÚSQUEDA */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: var(--panel-bg); padding: 25px; border-radius: 12px; width: 400px; max-width: 90%; border: 1px solid #334155; box-shadow: 0 20px 25px rgba(0,0,0,0.5); }
+        .modal-list { max-height: 300px; overflow-y: auto; margin-top: 10px; border: 1px solid #334155; border-radius: 8px; }
+        .modal-item { padding: 10px; border-bottom: 1px solid #334155; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; }
+        .modal-item:hover { background: #334155; }
+        .modal-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -131,24 +132,21 @@
     <div class="playlists-section">
         <div class="playlist-header">
             <h4 style="margin:0; color:white;">MIS PLAYLISTS</h4>
-            <button class="icon-btn" onclick="createNewPlaylist()" title="Nueva Playlist" style="background:transparent; border:none; font-size:1.2rem;">➕</button>
+            <button class="icon-btn" onclick="createNewPlaylist()" title="Nueva Playlist">➕</button>
         </div>
         <div class="playlist-list" id="playlistsContainer"></div>
-        
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:10px; border-top:1px solid #1e293b;">
             <span id="currentPlaylistNameDisplay" style="font-weight:bold; color:#cbd5e1; font-size:0.9rem;">...</span>
             <div>
-                <button class="icon-btn" onclick="renameCurrentPlaylist()" title="Renombrar Playlist">✏️</button>
-                <button class="icon-btn danger" onclick="deleteCurrentPlaylist()" title="Borrar Playlist Actual">🗑️</button>
+                <button class="icon-btn" onclick="renameCurrentPlaylist()" title="Renombrar">✏️</button>
+                <button class="icon-btn danger" onclick="deleteCurrentPlaylist()" title="Borrar Playlist">🗑️</button>
             </div>
         </div>
     </div>
-
     <div class="songs-section">
         <div class="sidebar-title">Canciones en Lista</div>
         <div id="songsListContainer"></div>
     </div>
-    
     <div style="padding:15px; border-top:1px solid #334155;">
         <button onclick="toggleSidebar()" style="width:100%; justify-content:center;">Cerrar Menú</button>
     </div>
@@ -158,10 +156,11 @@
     <header>
         <div style="display:flex; align-items:center; gap:15px;">
             <button onclick="toggleSidebar()" style="background:transparent; border:1px solid #475569;">☰ <span id="headerPlaylistName">Lista</span></button>
-            <h1>SongPractice <span>Studio</span></h1>
+            <h1>SongPractice <span>Pro</span></h1>
         </div>
         
         <div style="display:flex; gap: 10px;">
+            <button onclick="openLibraryModal()" style="background: #334155; border: 1px solid #64748b;">🔍 Agregar Existente</button>
             <button onclick="startNewSong()" class="btn-new">➕ Nueva</button>
             <button onclick="toggleEditMode()" id="modeBtn">⚙️ Configurar</button>
         </div>
@@ -174,17 +173,14 @@
                 <input type="text" id="songTitle" placeholder="Nombre...">
             </div>
         </div>
-
         <div class="source-tabs">
             <button class="tab-btn active" onclick="switchTab('youtube')" id="tabYoutube">YouTube</button>
             <button class="tab-btn" onclick="switchTab('mp3')" id="tabMp3">Archivo MP3</button>
         </div>
-
         <div id="sourceYoutube" class="source-content active">
             <label>Link de YouTube</label>
             <input type="text" id="ytUrl" placeholder="https://www.youtube.com/..." onchange="loadSourceMedia()">
         </div>
-
         <div id="sourceMp3" class="source-content">
             <label>Subir MP3 (Persistente)</label>
             <div class="file-upload">
@@ -192,7 +188,6 @@
                 <input type="file" id="mp3Input" accept="audio/*" onchange="handleFileSelect(this)">
             </div>
         </div>
-
         <div class="form-grid" style="margin-top:15px;">
             <div>
                 <label>Duración</label>
@@ -200,12 +195,9 @@
             </div>
             <div style="align-self:end; color:#64748b; font-size:0.8rem; padding-bottom:10px;" id="durationStatus">...</div>
         </div>
-
         <label>Letra y Acordes</label>
         <textarea id="inputArea" spellcheck="false" placeholder="Pega la letra..."></textarea>
-        
-        <button class="save-btn" onclick="saveToCurrentPlaylist()">💾 Guardar en <span id="saveBtnPlaylistName">...</span></button>
-
+        <button class="save-btn" onclick="saveToLibraryAndPlaylist()">💾 Guardar Cambios</button>
         <div class="btn-group" style="display:flex; gap:10px; margin-top:20px;">
             <button onclick="transpose(-1)">➖ Tono</button>
             <span id="keyDisplay" style="background:#0f172a; padding:0 20px; border-radius:8px; display:flex; align-items:center; font-weight:bold; border:1px solid #334155;">Original</span>
@@ -217,14 +209,14 @@
 
     <div id="songContainer">
         <div style="text-align:center; padding-top:100px; color:#64748b;">
-            <h2>Selecciona una canción o crea una nueva</h2>
-            <p>Usa el botón "Nueva" arriba a la derecha.</p>
+            <h2>Selecciona una canción</h2>
+            <p>O usa "Nueva" para crear.</p>
         </div>
     </div>
 </div>
 
 <div id="mediaContainer">
-    <div class="drag-handle"></div>
+    <div class="drag-handle-window"></div>
     <div id="youtube-player" style="display:none; height:100%;"></div>
     <div id="audioVisualizer" style="display:none;">
         <div style="font-size:3rem;">💾</div>
@@ -238,16 +230,23 @@
         <div id="statusText" style="font-weight:bold;">Listo</div>
         <div id="timeDisplay" style="font-size:0.8rem; color:#94a3b8; font-family:var(--font-mono);">00:00</div>
     </div>
-
     <div class="controls-center">
         <button class="skip-btn" onclick="playPrev()">⏮</button>
         <button class="play-btn" id="masterPlayBtn" onclick="toggleGlobalPlay()">▶</button>
         <button class="skip-btn" onclick="playNext()">⏭</button>
     </div>
-
     <div style="display:flex; align-items:center; gap:10px;">
         <span class="badge" id="speedBadge">Manual</span>
         <input type="range" id="scrollSpeed" min="0" max="100" value="0" step="0.5" style="width:120px;">
+    </div>
+</div>
+
+<div class="modal-overlay" id="libraryModal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color:white;">📚 Biblioteca Global</h3>
+        <input type="text" id="searchLibrary" placeholder="Filtrar..." onkeyup="renderLibraryList()" style="margin-bottom:10px;">
+        <div class="modal-list" id="libraryList"></div>
+        <button onclick="closeLibraryModal()" style="width:100%; margin-top:15px;">Cerrar</button>
     </div>
 </div>
 
@@ -256,94 +255,96 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
     // ==========================================
-    // 1. DATABASE (INDEXED DB)
+    // 1. DATABASE (Audio Files)
     // ==========================================
-    const DB_NAME = 'SongPracticeDB';
-    const STORE_NAME = 'audioFiles';
-    let db;
-
+    const DB_NAME = 'SongPracticeDB'; const STORE_NAME = 'audioFiles'; let db;
     function initDB() {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = (e) => {
-            db = e.target.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
-        };
-        request.onsuccess = (e) => {
-            db = e.target.result;
-            document.getElementById('dbStatus').innerText = "DB: OK";
-            initAppData(); 
-        };
-        request.onerror = () => document.getElementById('dbStatus').innerText = "DB Error";
+        const r = indexedDB.open(DB_NAME, 1);
+        r.onupgradeneeded = (e) => { db = e.target.result; if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME); };
+        r.onsuccess = (e) => { db = e.target.result; document.getElementById('dbStatus').innerText = "DB: OK"; initAppData(); };
+        r.onerror = () => document.getElementById('dbStatus').innerText = "DB Error";
     }
-
-    function storeAudioFile(id, file, callback) {
-        const tx = db.transaction([STORE_NAME], 'readwrite');
-        tx.objectStore(STORE_NAME).put(file, id).onsuccess = () => callback(true);
-        tx.onerror = () => callback(false);
-    }
-    function getAudioFile(id, callback) {
-        const tx = db.transaction([STORE_NAME], 'readonly');
-        tx.objectStore(STORE_NAME).get(id).onsuccess = (e) => callback(e.target.result);
-        tx.onerror = () => callback(null);
-    }
-    function deleteAudioFile(id) {
-        db.transaction([STORE_NAME], 'readwrite').objectStore(STORE_NAME).delete(id);
-    }
+    function storeAudioFile(id, file, cb) { const tx = db.transaction([STORE_NAME], 'readwrite'); tx.objectStore(STORE_NAME).put(file, id).onsuccess = () => cb(true); tx.onerror = () => cb(false); }
+    function getAudioFile(id, cb) { const tx = db.transaction([STORE_NAME], 'readonly'); tx.objectStore(STORE_NAME).get(id).onsuccess = (e) => cb(e.target.result); tx.onerror = () => cb(null); }
+    function deleteAudioFile(id) { db.transaction([STORE_NAME], 'readwrite').objectStore(STORE_NAME).delete(id); }
 
     // ==========================================
-    // 2. DATA (MULTI-PLAYLIST)
+    // 2. DATA STRUCTURE (RELATIONAL)
     // ==========================================
-    let appData = { playlists: [], activePlaylistId: null };
+    // Estructura: 
+    // library: { "id1": {title, content, type, url, ...}, "id2": {...} }
+    // playlists: [ {id, name, songIds: ["id1", "id2"]} ]
+    
+    let appData = { library: {}, playlists: [], activePlaylistId: null };
 
     function initAppData() {
-        const v9Data = localStorage.getItem('songPracticeData_v9');
-        if (v9Data) {
-            appData = JSON.parse(v9Data);
-            const exists = appData.playlists.find(p => p.id === appData.activePlaylistId);
-            if (!exists && appData.playlists.length > 0) {
-                appData.activePlaylistId = appData.playlists[0].id;
-                saveAppData();
+        // CAMBIO DE VERSIÓN PARA ROMPER RETROCOMPATIBILIDAD
+        const data = localStorage.getItem('songPracticeData_v2_relational');
+        if (data) {
+            appData = JSON.parse(data);
+            if(!appData.playlists.find(p => p.id === appData.activePlaylistId)) {
+                appData.activePlaylistId = appData.playlists[0]?.id || createDefaultPlaylist();
             }
         } else {
-            const defaultId = Date.now().toString();
-            appData.playlists.push({ id: defaultId, name: "General", songs: [] });
-            appData.activePlaylistId = defaultId;
-            saveAppData();
+            createDefaultPlaylist();
         }
         renderSidebarPlaylists();
         loadCurrentPlaylistSongs();
+        initSortable();
+    }
+
+    function createDefaultPlaylist() {
+        const pid = Date.now().toString();
+        appData.library = {};
+        appData.playlists = [{ id: pid, name: "General", songIds: [] }];
+        appData.activePlaylistId = pid;
+        saveAppData();
+        return pid;
     }
 
     function saveAppData() {
-        localStorage.setItem('songPracticeData_v9', JSON.stringify(appData));
+        localStorage.setItem('songPracticeData_v2_relational', JSON.stringify(appData));
     }
 
     function getActivePlaylist() {
         return appData.playlists.find(p => p.id === appData.activePlaylistId);
     }
-
-    // ==========================================
-    // 3. PLAYLIST OPERATIONS
-    // ==========================================
     
-    function createNewPlaylist() {
-        const name = prompt("Nombre de la nueva Playlist:", "Nueva Lista");
-        if(name) {
-            const newId = Date.now().toString();
-            appData.playlists.push({ id: newId, name: name, songs: [] });
-            switchPlaylist(newId);
-        }
+    // Obtener objeto canción completo a partir de su ID
+    function getSongById(id) {
+        return appData.library[id];
     }
 
-    function renameCurrentPlaylist() {
-        const active = getActivePlaylist();
-        if(!active) return;
-        
-        const newName = prompt("Nuevo nombre para la playlist:", active.name);
-        if(newName && newName.trim() !== "") {
-            active.name = newName.trim();
-            saveAppData();
-            renderSidebarPlaylists(); 
+    // ==========================================
+    // 3. SORTABLE
+    // ==========================================
+    function initSortable() {
+        Sortable.create(document.getElementById('songsListContainer'), {
+            animation: 150, ghostClass: 'sortable-ghost', handle: '.song-item',
+            onEnd: function (evt) {
+                const active = getActivePlaylist();
+                const movedId = active.songIds.splice(evt.oldIndex, 1)[0];
+                active.songIds.splice(evt.newIndex, 0, movedId);
+                
+                // Ajustar currentIndex
+                if (currentIndex === evt.oldIndex) currentIndex = evt.newIndex;
+                else if (currentIndex > evt.oldIndex && currentIndex <= evt.newIndex) currentIndex--;
+                else if (currentIndex < evt.oldIndex && currentIndex >= evt.newIndex) currentIndex++;
+                
+                saveAppData();
+            }
+        });
+    }
+
+    // ==========================================
+    // 4. PLAYLIST & LIBRARY LOGIC
+    // ==========================================
+    function createNewPlaylist() {
+        const name = prompt("Nombre:", "Nueva Lista");
+        if(name) {
+            const newId = "pl_" + Date.now();
+            appData.playlists.push({ id: newId, name: name, songIds: [] });
+            switchPlaylist(newId);
         }
     }
 
@@ -355,74 +356,78 @@
         loadCurrentPlaylistSongs();
         stopGlobal();
     }
-
+    
     function deleteCurrentPlaylist() {
         if(appData.playlists.length <= 1) return alert("No puedes borrar la última playlist.");
-        const active = getActivePlaylist();
-        if(confirm(`¿Borrar "${active.name}"?`)) {
-            active.songs.forEach(s => { if(s.type === 'mp3') deleteAudioFile(s.url); });
-            appData.playlists = appData.playlists.filter(p => p.id !== active.id);
+        if(confirm("¿Borrar playlist? Las canciones seguirán en la Biblioteca.")) {
+            appData.playlists = appData.playlists.filter(p => p.id !== appData.activePlaylistId);
             switchPlaylist(appData.playlists[0].id);
         }
+    }
+    
+    function renameCurrentPlaylist() {
+        const active = getActivePlaylist();
+        const n = prompt("Nombre:", active.name);
+        if(n) { active.name = n; saveAppData(); renderSidebarPlaylists(); }
     }
 
     function renderSidebarPlaylists() {
         const container = document.getElementById('playlistsContainer');
         const active = getActivePlaylist();
-        
         container.innerHTML = appData.playlists.map(p => `
-            <div class="playlist-chip ${p.id === appData.activePlaylistId ? 'active' : ''}" 
-                 onclick="switchPlaylist('${p.id}')">
-                ${p.name} <span style="opacity:0.6; font-size:0.7em;">(${p.songs.length})</span>
+            <div class="playlist-chip ${p.id === appData.activePlaylistId ? 'active' : ''}" onclick="switchPlaylist('${p.id}')">
+                ${p.name} <span style="opacity:0.6; font-size:0.7em;">(${p.songIds.length})</span>
             </div>
         `).join('');
-        
-        const name = active ? active.name : "Error";
-        document.getElementById('currentPlaylistNameDisplay').innerText = name;
-        document.getElementById('headerPlaylistName').innerText = name;
-        document.getElementById('saveBtnPlaylistName').innerText = name;
+        document.getElementById('currentPlaylistNameDisplay').innerText = active ? active.name : "";
+        document.getElementById('headerPlaylistName').innerText = active ? active.name : "";
     }
 
     // ==========================================
-    // 4. SONG LOGIC & UX MEJORADO
+    // 5. SONG MANAGEMENT (RELATIONAL)
     // ==========================================
-    let currentMode = 'youtube'; 
-    let currentIndex = -1;
-    let ytPlayer;
-    let audioPlayer = document.getElementById('html5Player');
-    let tempMp3File = null;
+    let currentMode = 'youtube'; let currentIndex = -1; let currentSongId = null;
+    let ytPlayer; let audioPlayer = document.getElementById('html5Player'); let tempMp3File = null;
 
     function loadCurrentPlaylistSongs() {
         const active = getActivePlaylist();
         const container = document.getElementById('songsListContainer');
         container.innerHTML = "";
-
-        if(!active || active.songs.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">Lista vacía</div>';
+        
+        if(!active || active.songIds.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">Lista vacía<br><small>Arrastra para ordenar</small></div>';
             return;
         }
 
-        container.innerHTML = active.songs.map((s, i) => `
+        container.innerHTML = active.songIds.map((sid, i) => {
+            const s = getSongById(sid);
+            if(!s) return ''; // Error data integrity
+            return `
             <div class="song-item ${i === currentIndex ? 'active' : ''}" onclick="loadSongByIndex(${i})">
-                <div style="overflow:hidden;">
-                    <div style="font-weight:bold; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.title}</div>
-                    <div style="font-size:0.7rem; color:#94a3b8; display:flex; align-items:center; margin-top:4px;">
-                        <span class="song-type ${s.type==='youtube'?'type-yt':'type-mp3'}">${s.type==='youtube'?'YT':'MP3'}</span>
-                        ${s.duration || '--:--'}
+                <div style="display:flex; align-items:center; overflow:hidden;">
+                    <span class="drag-handle">⋮⋮</span>
+                    <div style="overflow:hidden;">
+                        <div style="font-weight:bold; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.title}</div>
+                        <div style="font-size:0.7rem; color:#94a3b8; display:flex; align-items:center; margin-top:4px;">
+                            <span class="song-type ${s.type==='youtube'?'type-yt':'type-mp3'}">${s.type==='youtube'?'YT':'MP3'}</span>
+                            ${s.duration || '--:--'}
+                        </div>
                     </div>
                 </div>
-                <button onclick="deleteSong(event, ${i})" style="background:none; border:none; color:#ef4444; padding:0; font-size:1.2rem;">×</button>
-            </div>
-        `).join('');
+                <button onclick="deleteSongAction(event, ${i})" style="background:none; border:none; color:#ef4444; padding:0; font-size:1.2rem;" title="Quitar">×</button>
+            </div>`;
+        }).join('');
     }
 
     function loadSongByIndex(index) {
         const active = getActivePlaylist();
-        if(!active || !active.songs[index]) return;
+        if(!active || !active.songIds[index]) return;
 
         currentIndex = index;
-        const s = active.songs[index];
+        currentSongId = active.songIds[index];
+        const s = getSongById(currentSongId);
 
+        // Cargar datos en formulario (para edición)
         document.getElementById('songTitle').value = s.title;
         document.getElementById('inputArea').value = s.content;
         document.getElementById('songDuration').value = s.duration;
@@ -441,187 +446,167 @@
             getAudioFile(s.url, (blob) => {
                 if(blob) {
                     audioPlayer.src = URL.createObjectURL(blob);
-                    document.getElementById('mp3Label').innerText = "📂 Cargado de DB";
+                    document.getElementById('mp3Label').innerText = "📂 Audio Cargado";
                     document.getElementById('mp3Label').classList.add('loaded');
                     document.getElementById('durationStatus').innerHTML = "<span style='color:#10b981'>✅ Audio Listo</span>";
                     calculateSpeedFromDuration();
-                } else {
-                    alert("Audio no encontrado en DB.");
                 }
             });
         }
-        
-        // Si el panel está abierto, actualizamos la vista de edición también
-        if(!document.getElementById('configPanel').classList.contains('collapsed')) {
-             // Ya cargamos los valores arriba, así que todo ok.
-        }
-        
         restartPractice();
     }
 
-    // --- UX MEJORADO: FUNCIÓN START NEW SONG ---
+    // --- NUEVO SISTEMA DE GUARDADO ---
     function startNewSong() {
-        // 1. Resetear el índice (modo creación)
         currentIndex = -1;
-        
-        // 2. Limpiar formulario visualmente
+        currentSongId = null; // Nueva ID se generará al guardar
         clearForm();
-        
-        // 3. Abrir el panel
         document.getElementById('configPanel').classList.remove('collapsed');
         document.getElementById('modeBtn').innerText = "Ocultar Editor";
-        
-        // 4. Detener reproducción
         stopGlobal();
-        window.scrollTo(0,0);
-        
-        // 5. Borrar vista actual de la canción (opcional, o dejar la anterior de fondo)
-        document.getElementById('songContainer').innerHTML = `
-            <div style="text-align:center; padding-top:50px; color:#cbd5e1;">
-                <h2>Creando nueva canción...</h2>
-                <p>Rellena el formulario arriba y dale a Guardar.</p>
-            </div>
-        `;
+        document.getElementById('songContainer').innerHTML = `<div style="text-align:center; padding-top:50px; color:#cbd5e1;"><h2>Nueva Canción</h2><p>Rellena datos y guarda.</p></div>`;
     }
 
-    // --- HELPER: Limpiar Formulario ---
+    async function saveToLibraryAndPlaylist() {
+        const active = getActivePlaylist();
+        const title = document.getElementById('songTitle').value || "Sin Título";
+        const content = document.getElementById('inputArea').value;
+        const duration = document.getElementById('songDuration').value;
+        const type = currentMode;
+        
+        // Determinar ID: si editamos usamos la actual, si es nueva generamos una
+        const idToSave = currentSongId || "song_" + Date.now();
+        let urlData = (type === 'youtube') ? document.getElementById('ytUrl').value : idToSave; // Para MP3 usamos el ID como key
+
+        // Función interna para finalizar guardado
+        const finalize = () => {
+            // 1. Guardar/Actualizar en LIBRERÍA
+            appData.library[idToSave] = {
+                id: idToSave, title, content, duration, type, url: urlData, transpose: currentStep
+            };
+
+            // 2. Si es NUEVA en esta playlist, agregar ID
+            if (currentIndex === -1) {
+                // Verificar si ya existe en esta playlist para no duplicar ID
+                if(!active.songIds.includes(idToSave)) {
+                    active.songIds.push(idToSave);
+                    currentIndex = active.songIds.length - 1;
+                }
+            }
+            // Si es EDICIÓN, no hacemos nada con la playlist, porque solo referencia al ID
+
+            currentSongId = idToSave;
+            saveAppData();
+            renderSidebarPlaylists();
+            loadCurrentPlaylistSongs();
+            closeEditor();
+            loadSongByIndex(currentIndex); // Recargar para ver cambios
+            tempMp3File = null;
+        };
+
+        if (type === 'mp3' && tempMp3File) {
+            storeAudioFile(idToSave, tempMp3File, (success) => {
+                if(success) finalize();
+                else alert("Error guardando audio");
+            });
+        } else {
+            finalize();
+        }
+    }
+
+    // --- ELIMINAR O QUITAR ---
+    function deleteSongAction(e, i) {
+        e.stopPropagation();
+        const active = getActivePlaylist();
+        const sid = active.songIds[i];
+        
+        // UX Profesional: Preguntar intención
+        if(confirm(`¿Quitar "${appData.library[sid].title}" de ESTA lista?\n(Seguirá existiendo en la biblioteca)`)) {
+             active.songIds.splice(i, 1);
+             if(i === currentIndex) currentIndex = -1;
+             saveAppData();
+             loadCurrentPlaylistSongs();
+        }
+        // Nota: Para "Borrar Permanentemente" se haría desde el Modal de Biblioteca
+    }
+
+    // --- MODAL DE BIBLIOTECA (Agregar existente) ---
+    function openLibraryModal() {
+        document.getElementById('libraryModal').style.display = 'flex';
+        renderLibraryList();
+    }
+    function closeLibraryModal() {
+        document.getElementById('libraryModal').style.display = 'none';
+    }
+    function renderLibraryList() {
+        const filter = document.getElementById('searchLibrary').value.toLowerCase();
+        const listDiv = document.getElementById('libraryList');
+        const active = getActivePlaylist();
+        
+        // Obtener todas las canciones de la librería
+        const allSongs = Object.values(appData.library);
+        
+        // Filtrar por texto y excluir las que YA están en la playlist actual
+        const filtered = allSongs.filter(s => {
+            const matchText = s.title.toLowerCase().includes(filter);
+            const alreadyInList = active.songIds.includes(s.id);
+            return matchText && !alreadyInList;
+        });
+
+        if(filtered.length === 0) {
+            listDiv.innerHTML = '<div style="padding:10px; color:#94a3b8;">No hay canciones coincidentes o disponibles.</div>';
+            return;
+        }
+
+        listDiv.innerHTML = filtered.map(s => `
+            <div class="modal-item" onclick="addExistingToPlaylist('${s.id}')">
+                <span>${s.title}</span>
+                <span class="song-type ${s.type==='youtube'?'type-yt':'type-mp3'}" style="margin-left:auto;">${s.type==='youtube'?'YT':'MP3'}</span>
+            </div>
+        `).join('');
+    }
+
+    function addExistingToPlaylist(sid) {
+        const active = getActivePlaylist();
+        active.songIds.push(sid);
+        saveAppData();
+        loadCurrentPlaylistSongs();
+        closeLibraryModal();
+        
+        // Feedback visual rápido
+        const btn = document.querySelector('button[onclick="openLibraryModal()"]');
+        const origText = btn.innerText;
+        btn.innerText = "✅ Agregado";
+        setTimeout(() => btn.innerText = origText, 1000);
+    }
+
+    // ==========================================
+    // UTILS & UI (Sin cambios mayores)
+    // ==========================================
     function clearForm() {
         document.getElementById('songTitle').value = "";
         document.getElementById('ytUrl').value = "";
         document.getElementById('inputArea').value = "";
         document.getElementById('songDuration').value = "";
-        document.getElementById('mp3Input').value = ""; // Clear file input
+        document.getElementById('mp3Input').value = ""; 
         document.getElementById('mp3Label').innerText = "📂 Seleccionar archivo";
         document.getElementById('mp3Label').classList.remove('loaded');
-        document.getElementById('durationStatus').innerText = "...";
-        
-        // Reset transposición
         currentStep = 0;
         document.getElementById('keyDisplay').innerText = "Original";
-        
         tempMp3File = null;
     }
-    
-    // --- HELPER: Cerrar Editor ---
     function closeEditor() {
         document.getElementById('configPanel').classList.add('collapsed');
         document.getElementById('modeBtn').innerText = "⚙️ Configurar";
-        
-        // Si estábamos en modo "Nueva" y cancelamos, dejamos limpia la vista
-        if(currentIndex === -1) {
-             clearForm();
+        if(currentIndex === -1 && !currentSongId) clearForm();
+    }
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            tempMp3File = input.files[0];
+            document.getElementById('mp3Label').innerText = "📂 " + tempMp3File.name;
+            audioPlayer.src = URL.createObjectURL(tempMp3File);
         }
     }
-
-    async function saveToCurrentPlaylist() {
-        const active = getActivePlaylist(); 
-        if(!active) return alert("Error: No hay playlist seleccionada.");
-
-        const title = document.getElementById('songTitle').value || "Sin Título";
-        const content = document.getElementById('inputArea').value;
-        const duration = document.getElementById('songDuration').value;
-        const type = currentMode;
-        const songId = Date.now().toString(); 
-        
-        let url = ""; 
-        
-        if (type === 'youtube') {
-            url = document.getElementById('ytUrl').value;
-            finishSave(songId, title, content, duration, type, url);
-        } else {
-            if (!tempMp3File && currentIndex === -1) return alert("Falta el archivo de audio.");
-            
-            if (tempMp3File) {
-                document.getElementById('durationStatus').innerText = "Guardando...";
-                storeAudioFile(songId, tempMp3File, (success) => {
-                    if(success) finishSave(songId, title, content, duration, type, songId); 
-                    else alert("Error al guardar MP3.");
-                });
-            } else {
-                const currentSong = active.songs[currentIndex];
-                finishSave(currentSong.id, title, content, duration, type, currentSong.url);
-            }
-        }
-    }
-
-    function finishSave(id, title, content, duration, type, url) {
-        const active = getActivePlaylist();
-        const song = { id, title, content, duration, type, url, transpose: currentStep };
-        
-        if (currentIndex > -1) {
-            active.songs[currentIndex] = song;
-        } else {
-            active.songs.push(song);
-        }
-        
-        saveAppData(); 
-        renderSidebarPlaylists(); 
-        loadCurrentPlaylistSongs(); 
-        
-        // === UX MEJORADO: Guardar, Vaciar y Ocultar ===
-        // 1. Si era nueva, seleccionamos la nueva (o no, segun preferencia. Dejémoslo en la lista).
-        // 2. Cerramos el editor
-        closeEditor();
-        // 3. Limpiamos el formulario para que la próxima vez esté vacío
-        clearForm();
-        
-        // Si se editó una existente, recargar su vista
-        if (currentIndex > -1) {
-            loadSongByIndex(currentIndex);
-        }
-        
-        tempMp3File = null;
-        document.getElementById('durationStatus').innerText = "Listo.";
-    }
-
-    function deleteSong(e, i) {
-        e.stopPropagation();
-        if(confirm("¿Borrar canción?")) {
-            const active = getActivePlaylist();
-            const s = active.songs[i];
-            if(s.type === 'mp3') deleteAudioFile(s.url);
-            active.songs.splice(i, 1);
-            if(i === currentIndex) currentIndex = -1;
-            saveAppData();
-            renderSidebarPlaylists();
-            loadCurrentPlaylistSongs();
-            document.getElementById('songContainer').innerHTML = ""; // Limpiar vista
-        }
-    }
-
-    function playNext() {
-        const active = getActivePlaylist();
-        if(!active || !active.songs.length) return;
-        let n = currentIndex + 1;
-        if(n >= active.songs.length) n = 0;
-        loadSongByIndex(n);
-    }
-    
-    function playPrev() {
-        const active = getActivePlaylist();
-        if(!active || !active.songs.length) return;
-        let n = currentIndex - 1;
-        if(n < 0) n = active.songs.length - 1;
-        loadSongByIndex(n);
-    }
-
-    // ==========================================
-    // 5. UTILS & UI
-    // ==========================================
-    document.addEventListener('DOMContentLoaded', () => {
-        initDB(); 
-        audioPlayer.onloadedmetadata = () => {
-            if(currentMode === 'mp3') {
-                const dur = audioPlayer.duration;
-                document.getElementById('songDuration').value = formatTime(dur);
-                calculateSpeedFromDuration();
-            }
-        };
-        audioPlayer.onplay = () => updatePlayerState('playing');
-        audioPlayer.onpause = () => updatePlayerState('paused');
-        audioPlayer.onended = () => { updatePlayerState('ended'); setTimeout(playNext, 1500); };
-    });
-
     function switchTab(mode) {
         currentMode = mode;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -635,95 +620,48 @@
         }
         stopGlobal();
     }
-
-    function handleFileSelect(input) {
-        if (input.files && input.files[0]) {
-            const file = input.files[0];
-            tempMp3File = file;
-            document.getElementById('mp3Label').innerText = "📂 " + file.name;
-            audioPlayer.src = URL.createObjectURL(file);
-            if(document.getElementById('songTitle').value === "") {
-                document.getElementById('songTitle').value = file.name.replace(/\.[^/.]+$/, "");
-            }
-        }
-    }
-
     function toggleEditMode() {
         const p = document.getElementById('configPanel');
-        
-        // Si está colapsado, lo abrimos
         if(p.classList.contains('collapsed')) {
-            p.classList.remove('collapsed'); 
-            document.getElementById('modeBtn').innerText="Ocultar Editor"; 
-            stopGlobal();
-            
-            // Si hay una canción seleccionada, nos aseguramos que los datos estén cargados
-            if(currentIndex !== -1) {
-                // Ya deberían estar cargados por loadSongByIndex, pero por seguridad
-                const active = getActivePlaylist();
-                if(active && active.songs[currentIndex]) {
-                    // Los inputs ya tienen los valores
-                }
-            }
-            
-        } else {
-            // Si está abierto, lo cerramos
-            closeEditor();
-        }
+            p.classList.remove('collapsed'); document.getElementById('modeBtn').innerText="Ocultar Editor"; stopGlobal();
+        } else { closeEditor(); }
     }
-    
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-
-    // PLAYBACK
+    
+    // PLAYER ENGINE
     function toggleGlobalPlay() {
         if(currentMode === 'youtube') {
             if(!ytPlayer || !ytPlayer.getPlayerState) return;
             const s = ytPlayer.getPlayerState();
             s === YT.PlayerState.PLAYING ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
-        } else {
-            audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause();
-        }
+        } else { audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause(); }
     }
-    function stopGlobal() {
-        if(ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
-        audioPlayer.pause();
-        stopScrollEngine();
-    }
+    function stopGlobal() { if(ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); audioPlayer.pause(); stopScrollEngine(); }
     function updatePlayerState(s) {
         const btn = document.getElementById('masterPlayBtn');
-        const txt = document.getElementById('statusText');
         const media = document.getElementById('mediaContainer');
-        
         if(s === 'playing') {
-            btn.innerText = "❚❚"; txt.innerText = "Ensayando..."; startScrollEngine();
-            media.style.display = 'block';
+            btn.innerText = "❚❚"; startScrollEngine(); media.style.display = 'block';
             document.getElementById('youtube-player').style.display = currentMode==='youtube'?'block':'none';
             document.getElementById('audioVisualizer').style.display = currentMode==='mp3'?'flex':'none';
-        } else {
-            btn.innerText = "▶"; txt.innerText = s==='ended'?"Fin":"Pausado"; stopScrollEngine();
-        }
+        } else { btn.innerText = "▶"; stopScrollEngine(); }
     }
     function restartPractice() {
         window.scrollTo(0,0);
         if(currentMode==='youtube' && ytPlayer.seekTo) { ytPlayer.seekTo(0); ytPlayer.pauseVideo(); }
         if(currentMode==='mp3') { audioPlayer.currentTime=0; audioPlayer.pause(); }
-        stopScrollEngine(); scrollAccumulator=0;
-        document.getElementById('masterPlayBtn').innerText="▶";
+        stopScrollEngine(); scrollAccumulator=0; document.getElementById('masterPlayBtn').innerText="▶";
     }
-
-    // YT API
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('youtube-player', {
-            height: '100%', width: '100%', playerVars: { 'playsinline': 1, 'autoplay': 0 },
+            height: '100%', width: '100%', playerVars: { 'playsinline': 1 },
             events: {
                 'onStateChange': (e) => {
                     if(currentMode !== 'youtube') return;
                     if(e.data===YT.PlayerState.PLAYING) updatePlayerState('playing');
                     else if(e.data===YT.PlayerState.PAUSED) updatePlayerState('paused');
                     else if(e.data===YT.PlayerState.ENDED) { updatePlayerState('ended'); setTimeout(playNext, 2000); }
-                    if(e.data===YT.PlayerState.CUED||e.data===YT.PlayerState.PLAYING){
-                         const d=ytPlayer.getDuration(); if(d>0){document.getElementById('songDuration').value=formatTime(d);calculateSpeedFromDuration();}
-                    }
+                    if(e.data===YT.PlayerState.CUED||e.data===YT.PlayerState.PLAYING){ const d=ytPlayer.getDuration(); if(d>0) { document.getElementById('songDuration').value=formatTime(d); calculateSpeedFromDuration(); }}
                 }
             }
         });
@@ -734,14 +672,13 @@
         if(m && m[2].length==11) { document.getElementById('mediaContainer').style.display='block'; ytPlayer.cueVideoById(m[2]); }
     }
     function loadSourceMedia() { if(currentMode==='youtube') cueVideoById(); }
-
-    // MUSICAL & SCROLL
+    
+    // TRANSPOSE & SCROLL (Igual que antes)
     const notes=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
     const flats=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
     let currentStep=0;
     const chordRegex=/\b([A-G][b#]?(?:maj|min|m|M|aug|dim|sus|add|alt|b5|#5|[0-9]|\+|\-|\(|\))*)(?:\/([A-G][b#]?))?\b/g;
     document.getElementById('inputArea').addEventListener('input', updateSongView);
-    
     function transpose(d){currentStep+=d; document.getElementById('keyDisplay').innerText=currentStep===0?"Original":(currentStep>0?"+":"")+currentStep; updateSongView();}
     function updateSongView(){
         const txt=document.getElementById('inputArea').value; const lines=txt.split('\n'); let used=[];
@@ -751,7 +688,8 @@
     }
     function isChordLine(l){if(!l.trim())return false; const w=l.trim().split(/\s+/); let c=0; w.forEach(x=>{if(x.replace(/[()]/g,'').match(/^[A-G][b#]?(maj|min|m|M|aug|dim|sus|add|alt|b5|#5|[0-9]|\+|\-|\(|\/)*$/))c++;}); return (c/w.length>0.4)&&!w.some(k=>k.length>8);}
     function tn(p,s){return p.replace(/[A-G][b#]?/,(n)=>{let i=notes.indexOf(n); let uf=(i===-1&&flats.indexOf(n)!==-1); if(i===-1)i=flats.indexOf(n); if(i===-1)return n; let ni=(i+s)%12; while(ni<0)ni+=12; return uf?flats[ni]:notes[ni];});}
-
+    function playNext() { const active=getActivePlaylist(); if(!active||!active.songIds.length)return; let n=currentIndex+1; if(n>=active.songIds.length)n=0; loadSongByIndex(n); }
+    function playPrev() { const active=getActivePlaylist(); if(!active||!active.songIds.length)return; let n=currentIndex-1; if(n<0)n=active.songIds.length-1; loadSongByIndex(n); }
     function formatTime(s){const m=Math.floor(s/60); const sc=Math.floor(s%60); return `${m.toString().padStart(2,'0')}:${sc.toString().padStart(2,'0')}`;}
     let useCalculatedSpeed=false, calculatedPixelsPerFrame=0, isScrolling=false, scrollAccumulator=0, scrollRequest;
     function calculateSpeedFromDuration(){
@@ -759,25 +697,16 @@
         const dist=document.body.scrollHeight-window.innerHeight; if(dist<=0)return;
         calculatedPixelsPerFrame=(dist/sec)/60; useCalculatedSpeed=true; document.getElementById('speedBadge').innerText="AUTO"; document.getElementById('speedBadge').classList.add('active'); document.getElementById('scrollSpeed').value=calculatedPixelsPerFrame*20;
     }
-    function startScrollEngine(){
-        isScrolling=true; function loop(){
-            if(!isScrolling)return; const atBottom=(window.innerHeight+window.scrollY)>=document.body.offsetHeight-2;
-            if(!atBottom){
-                let ppf=useCalculatedSpeed?calculatedPixelsPerFrame:(parseFloat(document.getElementById('scrollSpeed').value)/20);
-                if(ppf>0){ scrollAccumulator+=ppf; if(scrollAccumulator>=1){const m=Math.floor(scrollAccumulator); window.scrollBy(0,m); scrollAccumulator-=m;}}
-            }
-            scrollRequest=requestAnimationFrame(loop);
-        } scrollRequest=requestAnimationFrame(loop);
-    }
+    function startScrollEngine(){ isScrolling=true; function loop(){ if(!isScrolling)return; const atBottom=(window.innerHeight+window.scrollY)>=document.body.offsetHeight-2; if(!atBottom){ let ppf=useCalculatedSpeed?calculatedPixelsPerFrame:(parseFloat(document.getElementById('scrollSpeed').value)/20); if(ppf>0){ scrollAccumulator+=ppf; if(scrollAccumulator>=1){const m=Math.floor(scrollAccumulator); window.scrollBy(0,m); scrollAccumulator-=m;}} } scrollRequest=requestAnimationFrame(loop); } scrollRequest=requestAnimationFrame(loop); }
     function stopScrollEngine(){isScrolling=false; cancelAnimationFrame(scrollRequest);}
     document.getElementById('scrollSpeed').addEventListener('input',()=>{useCalculatedSpeed=false; document.getElementById('speedBadge').innerText="MANUAL"; document.getElementById('speedBadge').classList.remove('active');});
-    
     setInterval(()=>{
         let c=0; let t=document.getElementById('songDuration').value||"00:00";
-        if(currentMode==='youtube'&&ytPlayer&&ytPlayer.getCurrentTime) c=ytPlayer.getCurrentTime();
-        else if(currentMode==='mp3') c=audioPlayer.currentTime;
+        if(currentMode==='youtube'&&ytPlayer&&ytPlayer.getCurrentTime) c=ytPlayer.getCurrentTime(); else if(currentMode==='mp3') c=audioPlayer.currentTime;
         document.getElementById('timeDisplay').innerText=`${formatTime(c)} / ${t}`;
     },1000);
+    
+    document.addEventListener('DOMContentLoaded', initDB);
 </script>
 </body>
 </html>
