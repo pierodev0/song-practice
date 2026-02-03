@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SongPractice Studio | V11 Rename</title>
+    <title>SongPractice Studio | UX Mejorado</title>
     <style>
         :root {
             --primary: #f59e0b; /* Amber/Dorado para resaltar */
@@ -11,6 +11,7 @@
             --panel-bg: #1e293b;
             --text: #f1f5f9;
             --accent: #38bdf8;
+            --success: #10b981;
             --font-mono: 'Courier New', Courier, monospace;
             --sidebar-width: 340px;
         }
@@ -97,6 +98,10 @@
         button { background: #334155; color: white; border: 1px solid #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         button:hover { background: #475569; }
         button.primary { background: var(--primary); border-color: var(--primary); color: #0f172a; }
+        /* Nuevo botón verde para agregar */
+        button.btn-new { background: var(--success); border-color: var(--success); color: #0f172a; }
+        button.btn-new:hover { background: #059669; }
+
         button.save-btn { background: #059669; border-color: #059669; width: 100%; justify-content: center; margin-top: 15px; color: white; }
         
         /* BOTONES DE ICONO (Lápiz y Tacho) */
@@ -155,10 +160,14 @@
             <button onclick="toggleSidebar()" style="background:transparent; border:1px solid #475569;">☰ <span id="headerPlaylistName">Lista</span></button>
             <h1>SongPractice <span>Studio</span></h1>
         </div>
-        <button onclick="toggleEditMode()" id="modeBtn" class="primary">✏️ Editar / Configurar</button>
+        
+        <div style="display:flex; gap: 10px;">
+            <button onclick="startNewSong()" class="btn-new">➕ Nueva</button>
+            <button onclick="toggleEditMode()" id="modeBtn">⚙️ Configurar</button>
+        </div>
     </header>
 
-    <div class="config-panel" id="configPanel">
+    <div class="config-panel collapsed" id="configPanel">
         <div class="form-grid">
             <div style="grid-column: span 2;">
                 <label>Título Canción</label>
@@ -202,11 +211,16 @@
             <span id="keyDisplay" style="background:#0f172a; padding:0 20px; border-radius:8px; display:flex; align-items:center; font-weight:bold; border:1px solid #334155;">Original</span>
             <button onclick="transpose(1)">➕ Tono</button>
             <div style="flex-grow:1;"></div>
-            <button class="primary" onclick="toggleEditMode()">✅ ¡Listo!</button>
+            <button class="primary" onclick="closeEditor()">❌ Cancelar</button>
         </div>
     </div>
 
-    <div id="songContainer"></div>
+    <div id="songContainer">
+        <div style="text-align:center; padding-top:100px; color:#64748b;">
+            <h2>Selecciona una canción o crea una nueva</h2>
+            <p>Usa el botón "Nueva" arriba a la derecha.</p>
+        </div>
+    </div>
 </div>
 
 <div id="mediaContainer">
@@ -321,7 +335,6 @@
         }
     }
 
-    // --- NUEVA FUNCION: RENOMBRAR ---
     function renameCurrentPlaylist() {
         const active = getActivePlaylist();
         if(!active) return;
@@ -330,7 +343,7 @@
         if(newName && newName.trim() !== "") {
             active.name = newName.trim();
             saveAppData();
-            renderSidebarPlaylists(); // Actualiza el UI
+            renderSidebarPlaylists(); 
         }
     }
 
@@ -371,7 +384,7 @@
     }
 
     // ==========================================
-    // 4. SONG LOGIC
+    // 4. SONG LOGIC & UX MEJORADO
     // ==========================================
     let currentMode = 'youtube'; 
     let currentIndex = -1;
@@ -438,8 +451,65 @@
             });
         }
         
-        if(document.getElementById('configPanel').classList.contains('collapsed')) {
-            restartPractice();
+        // Si el panel está abierto, actualizamos la vista de edición también
+        if(!document.getElementById('configPanel').classList.contains('collapsed')) {
+             // Ya cargamos los valores arriba, así que todo ok.
+        }
+        
+        restartPractice();
+    }
+
+    // --- UX MEJORADO: FUNCIÓN START NEW SONG ---
+    function startNewSong() {
+        // 1. Resetear el índice (modo creación)
+        currentIndex = -1;
+        
+        // 2. Limpiar formulario visualmente
+        clearForm();
+        
+        // 3. Abrir el panel
+        document.getElementById('configPanel').classList.remove('collapsed');
+        document.getElementById('modeBtn').innerText = "Ocultar Editor";
+        
+        // 4. Detener reproducción
+        stopGlobal();
+        window.scrollTo(0,0);
+        
+        // 5. Borrar vista actual de la canción (opcional, o dejar la anterior de fondo)
+        document.getElementById('songContainer').innerHTML = `
+            <div style="text-align:center; padding-top:50px; color:#cbd5e1;">
+                <h2>Creando nueva canción...</h2>
+                <p>Rellena el formulario arriba y dale a Guardar.</p>
+            </div>
+        `;
+    }
+
+    // --- HELPER: Limpiar Formulario ---
+    function clearForm() {
+        document.getElementById('songTitle').value = "";
+        document.getElementById('ytUrl').value = "";
+        document.getElementById('inputArea').value = "";
+        document.getElementById('songDuration').value = "";
+        document.getElementById('mp3Input').value = ""; // Clear file input
+        document.getElementById('mp3Label').innerText = "📂 Seleccionar archivo";
+        document.getElementById('mp3Label').classList.remove('loaded');
+        document.getElementById('durationStatus').innerText = "...";
+        
+        // Reset transposición
+        currentStep = 0;
+        document.getElementById('keyDisplay').innerText = "Original";
+        
+        tempMp3File = null;
+    }
+    
+    // --- HELPER: Cerrar Editor ---
+    function closeEditor() {
+        document.getElementById('configPanel').classList.add('collapsed');
+        document.getElementById('modeBtn').innerText = "⚙️ Configurar";
+        
+        // Si estábamos en modo "Nueva" y cancelamos, dejamos limpia la vista
+        if(currentIndex === -1) {
+             clearForm();
         }
     }
 
@@ -487,7 +557,19 @@
         saveAppData(); 
         renderSidebarPlaylists(); 
         loadCurrentPlaylistSongs(); 
-        alert("¡Guardado correctamente!");
+        
+        // === UX MEJORADO: Guardar, Vaciar y Ocultar ===
+        // 1. Si era nueva, seleccionamos la nueva (o no, segun preferencia. Dejémoslo en la lista).
+        // 2. Cerramos el editor
+        closeEditor();
+        // 3. Limpiamos el formulario para que la próxima vez esté vacío
+        clearForm();
+        
+        // Si se editó una existente, recargar su vista
+        if (currentIndex > -1) {
+            loadSongByIndex(currentIndex);
+        }
+        
         tempMp3File = null;
         document.getElementById('durationStatus').innerText = "Listo.";
     }
@@ -503,6 +585,7 @@
             saveAppData();
             renderSidebarPlaylists();
             loadCurrentPlaylistSongs();
+            document.getElementById('songContainer').innerHTML = ""; // Limpiar vista
         }
     }
 
@@ -567,12 +650,28 @@
 
     function toggleEditMode() {
         const p = document.getElementById('configPanel');
-        if(!p.classList.contains('collapsed')) {
-            p.classList.add('collapsed'); document.getElementById('modeBtn').innerText="✏️ Configurar"; restartPractice();
+        
+        // Si está colapsado, lo abrimos
+        if(p.classList.contains('collapsed')) {
+            p.classList.remove('collapsed'); 
+            document.getElementById('modeBtn').innerText="Ocultar Editor"; 
+            stopGlobal();
+            
+            // Si hay una canción seleccionada, nos aseguramos que los datos estén cargados
+            if(currentIndex !== -1) {
+                // Ya deberían estar cargados por loadSongByIndex, pero por seguridad
+                const active = getActivePlaylist();
+                if(active && active.songs[currentIndex]) {
+                    // Los inputs ya tienen los valores
+                }
+            }
+            
         } else {
-            p.classList.remove('collapsed'); document.getElementById('modeBtn').innerText="Ocultar Editor"; stopGlobal();
+            // Si está abierto, lo cerramos
+            closeEditor();
         }
     }
+    
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
     // PLAYBACK
