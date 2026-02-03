@@ -271,14 +271,9 @@
     // ==========================================
     // 2. DATA STRUCTURE (RELATIONAL)
     // ==========================================
-    // Estructura: 
-    // library: { "id1": {title, content, type, url, ...}, "id2": {...} }
-    // playlists: [ {id, name, songIds: ["id1", "id2"]} ]
-    
     let appData = { library: {}, playlists: [], activePlaylistId: null };
 
     function initAppData() {
-        // CAMBIO DE VERSIÓN PARA ROMPER RETROCOMPATIBILIDAD
         const data = localStorage.getItem('songPracticeData_v2_relational');
         if (data) {
             appData = JSON.parse(data);
@@ -310,7 +305,6 @@
         return appData.playlists.find(p => p.id === appData.activePlaylistId);
     }
     
-    // Obtener objeto canción completo a partir de su ID
     function getSongById(id) {
         return appData.library[id];
     }
@@ -326,7 +320,6 @@
                 const movedId = active.songIds.splice(evt.oldIndex, 1)[0];
                 active.songIds.splice(evt.newIndex, 0, movedId);
                 
-                // Ajustar currentIndex
                 if (currentIndex === evt.oldIndex) currentIndex = evt.newIndex;
                 else if (currentIndex > evt.oldIndex && currentIndex <= evt.newIndex) currentIndex--;
                 else if (currentIndex < evt.oldIndex && currentIndex >= evt.newIndex) currentIndex++;
@@ -384,10 +377,17 @@
     }
 
     // ==========================================
-    // 5. SONG MANAGEMENT (RELATIONAL)
+    // 5. SONG MANAGEMENT
     // ==========================================
     let currentMode = 'youtube'; let currentIndex = -1; let currentSongId = null;
     let ytPlayer; let audioPlayer = document.getElementById('html5Player'); let tempMp3File = null;
+
+    // ----- ARREGLO DEL BUG DE SCROLL EN MP3 -----
+    // Conectamos los eventos del reproductor HTML5 al sistema central de estado
+    audioPlayer.onplay = () => updatePlayerState('playing');
+    audioPlayer.onpause = () => updatePlayerState('paused');
+    audioPlayer.onended = () => { updatePlayerState('ended'); setTimeout(playNext, 2000); };
+    // --------------------------------------------
 
     function loadCurrentPlaylistSongs() {
         const active = getActivePlaylist();
@@ -401,7 +401,7 @@
 
         container.innerHTML = active.songIds.map((sid, i) => {
             const s = getSongById(sid);
-            if(!s) return ''; // Error data integrity
+            if(!s) return ''; 
             return `
             <div class="song-item ${i === currentIndex ? 'active' : ''}" onclick="loadSongByIndex(${i})">
                 <div style="display:flex; align-items:center; overflow:hidden;">
@@ -427,7 +427,6 @@
         currentSongId = active.songIds[index];
         const s = getSongById(currentSongId);
 
-        // Cargar datos en formulario (para edición)
         document.getElementById('songTitle').value = s.title;
         document.getElementById('inputArea').value = s.content;
         document.getElementById('songDuration').value = s.duration;
@@ -442,6 +441,10 @@
             document.getElementById('ytUrl').value = s.url;
             cueVideoById();
         } else {
+            document.getElementById('mediaContainer').style.display = 'block';
+            document.getElementById('youtube-player').style.display = 'none';
+            document.getElementById('audioVisualizer').style.display = 'flex';
+
             document.getElementById('durationStatus').innerText = "Cargando audio...";
             getAudioFile(s.url, (blob) => {
                 if(blob) {
@@ -456,10 +459,9 @@
         restartPractice();
     }
 
-    // --- NUEVO SISTEMA DE GUARDADO ---
     function startNewSong() {
         currentIndex = -1;
-        currentSongId = null; // Nueva ID se generará al guardar
+        currentSongId = null; 
         clearForm();
         document.getElementById('configPanel').classList.remove('collapsed');
         document.getElementById('modeBtn').innerText = "Ocultar Editor";
@@ -474,33 +476,27 @@
         const duration = document.getElementById('songDuration').value;
         const type = currentMode;
         
-        // Determinar ID: si editamos usamos la actual, si es nueva generamos una
         const idToSave = currentSongId || "song_" + Date.now();
-        let urlData = (type === 'youtube') ? document.getElementById('ytUrl').value : idToSave; // Para MP3 usamos el ID como key
+        let urlData = (type === 'youtube') ? document.getElementById('ytUrl').value : idToSave; 
 
-        // Función interna para finalizar guardado
         const finalize = () => {
-            // 1. Guardar/Actualizar en LIBRERÍA
             appData.library[idToSave] = {
                 id: idToSave, title, content, duration, type, url: urlData, transpose: currentStep
             };
 
-            // 2. Si es NUEVA en esta playlist, agregar ID
             if (currentIndex === -1) {
-                // Verificar si ya existe en esta playlist para no duplicar ID
                 if(!active.songIds.includes(idToSave)) {
                     active.songIds.push(idToSave);
                     currentIndex = active.songIds.length - 1;
                 }
             }
-            // Si es EDICIÓN, no hacemos nada con la playlist, porque solo referencia al ID
 
             currentSongId = idToSave;
             saveAppData();
             renderSidebarPlaylists();
             loadCurrentPlaylistSongs();
             closeEditor();
-            loadSongByIndex(currentIndex); // Recargar para ver cambios
+            loadSongByIndex(currentIndex); 
             tempMp3File = null;
         };
 
@@ -514,23 +510,19 @@
         }
     }
 
-    // --- ELIMINAR O QUITAR ---
     function deleteSongAction(e, i) {
         e.stopPropagation();
         const active = getActivePlaylist();
         const sid = active.songIds[i];
         
-        // UX Profesional: Preguntar intención
         if(confirm(`¿Quitar "${appData.library[sid].title}" de ESTA lista?\n(Seguirá existiendo en la biblioteca)`)) {
              active.songIds.splice(i, 1);
              if(i === currentIndex) currentIndex = -1;
              saveAppData();
              loadCurrentPlaylistSongs();
         }
-        // Nota: Para "Borrar Permanentemente" se haría desde el Modal de Biblioteca
     }
 
-    // --- MODAL DE BIBLIOTECA (Agregar existente) ---
     function openLibraryModal() {
         document.getElementById('libraryModal').style.display = 'flex';
         renderLibraryList();
@@ -543,10 +535,8 @@
         const listDiv = document.getElementById('libraryList');
         const active = getActivePlaylist();
         
-        // Obtener todas las canciones de la librería
         const allSongs = Object.values(appData.library);
         
-        // Filtrar por texto y excluir las que YA están en la playlist actual
         const filtered = allSongs.filter(s => {
             const matchText = s.title.toLowerCase().includes(filter);
             const alreadyInList = active.songIds.includes(s.id);
@@ -573,16 +563,12 @@
         loadCurrentPlaylistSongs();
         closeLibraryModal();
         
-        // Feedback visual rápido
         const btn = document.querySelector('button[onclick="openLibraryModal()"]');
         const origText = btn.innerText;
         btn.innerText = "✅ Agregado";
         setTimeout(() => btn.innerText = origText, 1000);
     }
 
-    // ==========================================
-    // UTILS & UI (Sin cambios mayores)
-    // ==========================================
     function clearForm() {
         document.getElementById('songTitle').value = "";
         document.getElementById('ytUrl').value = "";
@@ -600,13 +586,28 @@
         document.getElementById('modeBtn').innerText = "⚙️ Configurar";
         if(currentIndex === -1 && !currentSongId) clearForm();
     }
+    
     function handleFileSelect(input) {
         if (input.files && input.files[0]) {
             tempMp3File = input.files[0];
             document.getElementById('mp3Label').innerText = "📂 " + tempMp3File.name;
             audioPlayer.src = URL.createObjectURL(tempMp3File);
+
+            const titleInput = document.getElementById('songTitle');
+            if(!titleInput.value) {
+                titleInput.value = tempMp3File.name.replace(/\.[^/.]+$/, "");
+            }
+
+            audioPlayer.onloadedmetadata = function() {
+                const d = audioPlayer.duration;
+                if(d && d !== Infinity) {
+                    document.getElementById('songDuration').value = formatTime(d);
+                    document.getElementById('durationStatus').innerHTML = "Duración detectada: <span style='color:#10b981'>" + formatTime(d) + "</span>";
+                }
+            };
         }
     }
+
     function switchTab(mode) {
         currentMode = mode;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -673,7 +674,7 @@
     }
     function loadSourceMedia() { if(currentMode==='youtube') cueVideoById(); }
     
-    // TRANSPOSE & SCROLL (Igual que antes)
+    // TRANSPOSE & SCROLL
     const notes=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
     const flats=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
     let currentStep=0;
